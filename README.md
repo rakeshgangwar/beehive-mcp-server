@@ -54,7 +54,14 @@ The Model Context Protocol (MCP) is a standardized way for AI assistants to acce
    MCP_SERVER_NAME=beehive
    ```
 
-5. Start the server:
+5. Start the MCP server:
+   ```bash
+   npm run start:mcp
+   ```
+
+   This starts the MCP server using stdio transport, which is compatible with Cline and other MCP clients.
+
+   If you prefer to run the legacy HTTP server (not recommended for Cline integration):
    ```bash
    npm start
    ```
@@ -179,6 +186,33 @@ Here's how an AI assistant might use this MCP server:
    }
    ```
 
+## Integration with Cline
+
+To use this MCP server with Cline, you need to add it to your Cline MCP settings:
+
+1. Open Cline and access the MCP settings (typically located at `~/.config/cline-mcp/settings.json` or in the VS Code settings)
+
+2. Add the following configuration to the `mcpServers` object:
+
+```json
+"beehive": {
+  "autoApprove": [],
+  "disabled": false,
+  "timeout": 60,
+  "command": "node",
+  "args": [
+    "/path/to/beehive-mcp-server/src/beehive-mcp.js"
+  ],
+  "env": {
+    "BEEHIVE_URL": "http://localhost:8181",
+    "MCP_SERVER_NAME": "beehive"
+  },
+  "transportType": "stdio"
+}
+```
+
+Make sure to replace `/path/to/beehive-mcp-server` with the actual path to your installation.
+
 ## Development
 
 To run the server in development mode with auto-restart on file changes:
@@ -186,6 +220,8 @@ To run the server in development mode with auto-restart on file changes:
 ```bash
 npm run dev
 ```
+
+This will start the HTTP server, which is useful for development and testing. For MCP integration, use `npm run start:mcp` as described above.
 
 ## License
 
