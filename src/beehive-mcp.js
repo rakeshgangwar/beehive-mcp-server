@@ -141,7 +141,7 @@ server.tool(
       const beeConfig = {};
       if (name) beeConfig.name = name;
       if (options) beeConfig.options = options;
-      
+
       const result = await beehiveClient.updateBee(id, beeConfig);
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
@@ -282,7 +282,7 @@ server.tool(
       if (event) chainConfig.event = event;
       if (actions) chainConfig.actions = actions;
       if (filters) chainConfig.filters = filters;
-      
+
       const result = await beehiveClient.updateChain(id, chainConfig);
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
@@ -332,6 +332,28 @@ server.tool(
       };
     } catch (error) {
       console.error(`Error triggering action ${actionName} on bee ${beeId}:`, error.message);
+      return {
+        content: [{ type: 'text', text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+  }
+);
+
+// Add tool for retrieving logs
+server.tool(
+  'get_logs',
+  {
+    beeId: z.string().optional().describe('Optional ID of the Bee to filter logs for')
+  },
+  async ({ beeId }) => {
+    try {
+      const logs = await beehiveClient.getLogs(beeId);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(logs, null, 2) }]
+      };
+    } catch (error) {
+      console.error('Error fetching logs:', error.message);
       return {
         content: [{ type: 'text', text: `Error: ${error.message}` }],
         isError: true

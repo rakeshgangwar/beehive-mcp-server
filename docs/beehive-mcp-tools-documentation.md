@@ -10,6 +10,7 @@ The Beehive MCP server provides tools for interacting with Beehive, an event and
 2. **Bees Management** - Manage Bee instances (configured instances of Hives)
 3. **Chains Management** - Manage Chains (connections between events and actions)
 4. **Actions** - Manually trigger actions
+5. **Logs** - Retrieve logs from the system
 
 ## Testing Methodology
 
@@ -826,7 +827,52 @@ The server-side API should be extended to implement a PUT method for chains, sim
 - ✅ Test error handling when the Chain doesn't exist - Returns a 404 error
 - ⚠️ Error handling when Beehive is unavailable - Returns a 500 error
 
-### Actions
+## Logs
+
+### `get_logs`
+
+**Description:** Retrieve logs from the system.
+
+**Required Parameters:**
+- None
+
+**Optional Parameters:**
+- `beeId` (string) - ID of the Bee to filter logs for
+
+**Request Format:**
+```json
+{
+  "beeId": "string" // Optional
+}
+```
+
+**Response Format:**
+```json
+{
+  "logs": [
+    {
+      "id": "string",
+      "bee": "string",
+      "level": 0,
+      "message": "string",
+      "timestamp": "2023-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+- `500 Internal Server Error` - If there's an issue connecting to the Beehive API
+
+**Test Cases:**
+- ✅ Verified successful retrieval of logs - Returns an array of log messages
+- ✅ Verified filtering logs by bee ID - Returns only logs for the specified bee
+- ⚠️ Error handling when Beehive is unavailable - Returns a 500 error
+
+**Implementation Note:**
+The logs functionality is working correctly. The client properly formats the request and handles the response from the API.
+
+## Actions
 
 #### `trigger_action`
 
@@ -895,6 +941,7 @@ This tool could not be fully tested due to the inability to create bees because 
    - `update_chain` - Not implemented in the Beehive API (no PUT endpoint for chains)
    - `delete_chain` - Working correctly
    - `trigger_action` - Not fully tested due to lack of bees to trigger actions on
+   - `get_logs` - Working correctly
 
 4. **Error Handling:**
    - 404 errors are properly returned when resources don't exist

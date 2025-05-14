@@ -390,6 +390,28 @@ class BeehiveClient {
    * @param {Object} options - Action parameters
    * @returns {Promise<Object>} - Action result
    */
+  /**
+   * Get logs from the system
+   * @param {string} [beeId] - Optional ID of the Bee to filter logs for
+   * @returns {Promise<Object>} - Logs
+   */
+  async getLogs(beeId = '') {
+    try {
+      const url = '/v1/logs' + (beeId ? `?bee=${beeId}` : '');
+      const response = await this.axios.get(url);
+      return response.data;
+    } catch (error) {
+      this._handleError(error, 'Error fetching logs');
+    }
+  }
+
+  /**
+   * Trigger an action on a Bee
+   * @param {string} beeId - ID of the Bee
+   * @param {string} actionName - Name of the action
+   * @param {Object} options - Action parameters
+   * @returns {Promise<Object>} - Action result
+   */
   async triggerAction(beeId, actionName, options = {}) {
     try {
       const response = await this.axios.post(`/v1/bees/${beeId}/actions/${actionName}`, options);
