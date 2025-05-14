@@ -2,13 +2,6 @@ require('dotenv').config();
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { z } = require('zod');
-const BeehiveClient = require('./beehive-client');
-
-// Initialize the Beehive client with the API key (if provided)
-const beehiveClient = new BeehiveClient(
-  process.env.BEEHIVE_URL,
-  process.env.BEEHIVE_API_KEY
-);
 
 // Create an MCP server with metadata
 const server = new McpServer({
