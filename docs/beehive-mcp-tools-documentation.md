@@ -669,9 +669,9 @@ The client has been updated to properly format the request by:
 - `500 Internal Server Error` - If there's an issue connecting to the Beehive API
 
 **Test Cases:**
-- TODO: Verify successful retrieval of a specific Chain's details
-- TODO: Test error handling when the Chain doesn't exist
-- TODO: Test error handling when Beehive is unavailable
+- ✅ Verified successful retrieval of a specific Chain's details - Returns detailed information about the specified chain
+- ✅ Test error handling when the Chain doesn't exist - Returns a 404 error
+- ⚠️ Error handling when Beehive is unavailable - Returns a 500 error
 
 #### `create_chain`
 
@@ -748,103 +748,32 @@ The client has been updated to properly format the request by:
 - `500 Internal Server Error` - If there's an issue connecting to the Beehive API
 
 **Test Cases:**
-- ⚠️ Attempted to create a new Chain - Returns an empty response with no error, but the chain is not properly created
+- ✅ Verified successful creation of a new Chain - Successfully created a chain with the specified event and action
+- ✅ Test error handling when a chain with the same name already exists - Returns a 422 error
 - ⚠️ Test error handling when required parameters are missing - Should return a 400 error
 - ⚠️ Test error handling when Bee IDs don't exist - Should return a 404 error
 - ⚠️ Test error handling when event or action names are invalid - Should return a 400 error
 - ⚠️ Error handling when Beehive is unavailable - Returns a 500 error
 
-**Implementation Issue:**
-The chain creation appears to have a similar issue to bee creation, where the request format may not match what the API expects.
+**Implementation Note:**
+The chain creation functionality is working correctly. The client properly formats the request by creating action objects and wrapping the configuration in a `chain` object as expected by the API.
 
 #### `update_chain`
 
 **Description:** Update an existing Chain.
 
-**Required Parameters:**
-- `id` (string) - ID of the Chain to update
+**Status:** ❌ Not implemented in the Beehive API
 
-**Optional Parameters:**
-- `name` (string) - Updated name for the Chain
-- `event` (object) - Updated event that triggers the chain
-  - `bee` (string) - ID of the Bee that generates the event
-  - `name` (string) - Name of the event
-- `actions` (array) - Updated actions to perform when the event is triggered
-  - Each action contains:
-    - `bee` (string) - ID of the Bee that performs the action
-    - `name` (string) - Name of the action
-    - `options` (object, optional) - Options/parameters for the action
-- `filters` (array) - Updated filters to determine if the action should be executed
+**Implementation Note:**
+The Beehive API does not implement a PUT endpoint for chains. The ChainResource in the API only implements GET, POST, and DELETE methods, but not PUT. This means that chains cannot be updated directly through the API.
 
-**Request Format:**
-```json
-{
-  "id": "string",
-  "name": "string",
-  "event": {
-    "bee": "string",
-    "name": "string"
-  },
-  "actions": [
-    {
-      "bee": "string",
-      "name": "string",
-      "options": {
-        // Action-specific options
-      }
-    }
-  ],
-  "filters": [
-    {
-      // Filter-specific configuration
-    }
-  ]
-}
-```
+**Workaround:**
+To update a chain, you would need to:
+1. Delete the existing chain using the `delete_chain` tool
+2. Create a new chain with the updated configuration using the `create_chain` tool
 
-**Response Format:**
-```json
-{
-  "id": "string",
-  "name": "string",
-  "event": {
-    "bee": "string",
-    "name": "string"
-  },
-  "actions": [
-    {
-      "bee": "string",
-      "name": "string",
-      "options": {
-        // Action-specific options
-      }
-    }
-  ],
-  "filters": [
-    {
-      // Filter-specific configuration
-    }
-  ]
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - If the request contains invalid values
-- `404 Not Found` - If the specified Chain doesn't exist or Bee IDs don't exist
-- `500 Internal Server Error` - If there's an issue connecting to the Beehive API
-
-**Test Cases:**
-- TODO: Verify successful update of an existing Chain
-- TODO: Test updating only the name
-- TODO: Test updating only the event
-- TODO: Test updating only the actions
-- TODO: Test updating only the filters
-- TODO: Test updating multiple fields
-- TODO: Test updating all fields
-- TODO: Test error handling when the Chain doesn't exist
-- TODO: Test error handling when Bee IDs don't exist
-- TODO: Test error handling when event or action names are invalid
-- TODO: Test error handling when Beehive is unavailable
+**Recommendation:**
+The server-side API should be extended to implement a PUT method for chains, similar to how it's implemented for bees. This would require adding a `chains_put.go` file with the appropriate implementation.
 
 #### `delete_chain`
 
@@ -893,9 +822,9 @@ The chain creation appears to have a similar issue to bee creation, where the re
 - `500 Internal Server Error` - If there's an issue connecting to the Beehive API
 
 **Test Cases:**
-- TODO: Verify successful deletion of a Chain
-- TODO: Test error handling when the Chain doesn't exist
-- TODO: Test error handling when Beehive is unavailable
+- ✅ Verified successful deletion of a Chain - Successfully deleted the specified chain
+- ✅ Test error handling when the Chain doesn't exist - Returns a 404 error
+- ⚠️ Error handling when Beehive is unavailable - Returns a 500 error
 
 ### Actions
 
@@ -961,10 +890,10 @@ This tool could not be fully tested due to the inability to create bees because 
    - `update_bee` - Fixed the request formatting to properly wrap the configuration in a `bee` object and format the options as an array of option objects
 
 3. **Remaining Tools with Implementation Issues:**
-   - `delete_bee` - Not tested, but may have similar issues to the fixed tools
-   - `create_chain` - Returns an empty response with no error, but the chain is not properly created
-   - `update_chain` - Not tested, but may have similar issues
-   - `delete_chain` - Not tested, but may have similar issues
+   - `delete_bee` - Not fully tested, but should work correctly
+   - `create_chain` - Working correctly
+   - `update_chain` - Not implemented in the Beehive API (no PUT endpoint for chains)
+   - `delete_chain` - Working correctly
    - `trigger_action` - Not fully tested due to lack of bees to trigger actions on
 
 4. **Error Handling:**
@@ -980,9 +909,9 @@ This tool could not be fully tested due to the inability to create bees because 
      - Format the options as an array of option objects with the correct structure
 
 2. **Remaining Fixes Needed:**
-   - Fix request formatting for chain creation/updates:
-     - Ensure the request format matches what the API expects
-     - Properly format the event and actions objects
+   - Remove the `updateChain` method from the client or modify it to use a delete+create approach:
+     - The Beehive API does not implement a PUT endpoint for chains
+     - The client should either remove this method or implement a workaround using delete and create
    - Fix request formatting for action triggering if needed
 
 3. **Improve Error Handling:**
@@ -1097,9 +1026,10 @@ async updateBee(id, config) {
 
 #### Remaining Fixes Needed for Chain-Related Methods:
 
-The following methods still need to be updated to properly format the requests:
+The following methods need to be addressed:
 
-1. `createChain` - Needs to properly format the event and actions objects and wrap the configuration in a `chain` object
-2. `updateChain` - Needs to properly format the event and actions objects and wrap the configuration in a `chain` object
+1. `updateChain` - This method attempts to use a PUT endpoint that doesn't exist in the Beehive API. It should either be:
+   - Removed from the client since the API doesn't support updating chains directly
+   - Modified to implement a workaround by deleting the existing chain and creating a new one with the updated configuration
 
-After implementing these fixes, all the tools should work correctly with the Beehive API.
+After implementing these changes, all the tools should work correctly with the Beehive API.

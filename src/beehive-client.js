@@ -235,8 +235,44 @@ class BeehiveClient {
       const formattedEvent = {
         Bee: config.event.bee,
         Name: config.event.name,
-        Options: [] // The API expects an array of Placeholder objects
+        Options: config.event.options || null // The API expects null if no options are provided
       };
+
+      // Get the action IDs
+      const actionIds = [];
+      if (config.actions && config.actions.length > 0) {
+        // For each action in the config, create an action in the API and get its ID
+        for (const action of config.actions) {
+          // Convert options to Placeholder array if needed
+          let formattedOptions = [];
+          if (action.options) {
+            if (Array.isArray(action.options)) {
+              // If options is already an array of Placeholder objects, use it as is
+              formattedOptions = action.options;
+            } else if (typeof action.options === 'object') {
+              // If options is an object, convert it to an array of Placeholder objects
+              formattedOptions = Object.entries(action.options).map(([name, value]) => ({
+                Name: name,
+                Type: typeof value === 'string' ? 'string' : typeof value,
+                Value: value
+              }));
+            }
+          }
+
+          // Create the action
+          const actionResponse = await this.axios.post('/v1/actions', {
+            action: {
+              bee: action.bee,
+              name: action.name,
+              options: formattedOptions
+            }
+          });
+
+          if (actionResponse.data && actionResponse.data.actions && actionResponse.data.actions.length > 0) {
+            actionIds.push(actionResponse.data.actions[0].id);
+          }
+        }
+      }
 
       // Format the chain config
       const formattedConfig = {
@@ -244,7 +280,7 @@ class BeehiveClient {
         description: config.description || '',
         event: formattedEvent,
         filters: config.filters || [],
-        actions: config.actions || []
+        actions: actionIds
       };
 
       // Wrap the config in a 'chain' object as expected by the API
@@ -274,8 +310,45 @@ class BeehiveClient {
         formattedEvent = {
           Bee: config.event.bee || currentChain.event.Bee,
           Name: config.event.name || currentChain.event.Name,
-          Options: currentChain.event.Options || [] // Preserve existing options
+          Options: config.event.options || currentChain.event.Options || null // Use new options if provided
         };
+      }
+
+      // Handle actions if provided
+      let actionIds = currentChain.actions;
+      if (config.actions && config.actions.length > 0) {
+        actionIds = [];
+        // For each action in the config, create an action in the API and get its ID
+        for (const action of config.actions) {
+          // Convert options to Placeholder array if needed
+          let formattedOptions = [];
+          if (action.options) {
+            if (Array.isArray(action.options)) {
+              // If options is already an array of Placeholder objects, use it as is
+              formattedOptions = action.options;
+            } else if (typeof action.options === 'object') {
+              // If options is an object, convert it to an array of Placeholder objects
+              formattedOptions = Object.entries(action.options).map(([name, value]) => ({
+                Name: name,
+                Type: typeof value === 'string' ? 'string' : typeof value,
+                Value: value
+              }));
+            }
+          }
+
+          // Create the action
+          const actionResponse = await this.axios.post('/v1/actions', {
+            action: {
+              bee: action.bee,
+              name: action.name,
+              options: formattedOptions
+            }
+          });
+
+          if (actionResponse.data && actionResponse.data.actions && actionResponse.data.actions.length > 0) {
+            actionIds.push(actionResponse.data.actions[0].id);
+          }
+        }
       }
 
       // Format the chain config
@@ -284,7 +357,7 @@ class BeehiveClient {
         description: config.description || currentChain.description,
         event: formattedEvent,
         filters: config.filters || currentChain.filters,
-        actions: config.actions || currentChain.actions
+        actions: actionIds
       };
 
       // Wrap the config in a 'chain' object as expected by the API
