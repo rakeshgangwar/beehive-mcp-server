@@ -12,7 +12,7 @@ class BeehiveClient {
   constructor(baseUrl = 'http://localhost:8181', apiKey = null) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
-    
+
     // Create an axios instance with default config
     this.axios = axios.create({
       baseURL: this.baseUrl,
@@ -86,7 +86,39 @@ class BeehiveClient {
    */
   async createBee(config) {
     try {
-      const response = await this.axios.post('/v1/bees', config);
+      // Get the hive details to properly format the options
+      const hiveResponse = await this.axios.get(`/v1/hives/${config.namespace}`);
+      const hiveOptions = hiveResponse.data.hives[0].options;
+
+      // Convert simple options object to array of option objects with proper structure
+      const formattedOptions = [];
+      for (const option of hiveOptions) {
+        const optionValue = config.options && config.options[option.Name] !== undefined
+          ? config.options[option.Name]
+          : (option.Default || '*');
+
+        formattedOptions.push({
+          Name: option.Name,
+          Description: option.Description,
+          Type: option.Type,
+          Default: option.Default,
+          Mandatory: option.Mandatory,
+          Value: optionValue
+        });
+      }
+
+      // Create the properly formatted config
+      const formattedConfig = {
+        name: config.name,
+        namespace: config.namespace,
+        description: config.description || '',
+        active: config.active !== undefined ? config.active : false,
+        options: formattedOptions
+      };
+
+      // Wrap the config in a 'bee' object as expected by the API
+      const wrappedConfig = { bee: formattedConfig };
+      const response = await this.axios.post('/v1/bees', wrappedConfig);
       return response.data;
     } catch (error) {
       this._handleError(error, 'Error creating bee');
@@ -101,7 +133,46 @@ class BeehiveClient {
    */
   async updateBee(id, config) {
     try {
-      const response = await this.axios.put(`/v1/bees/${id}`, config);
+      // Get the current bee details
+      const beeResponse = await this.axios.get(`/v1/bees/${id}`);
+      const currentBee = beeResponse.data.bees[0];
+
+      // Get the hive details to properly format the options
+      const hiveResponse = await this.axios.get(`/v1/hives/${currentBee.namespace}`);
+      const hiveOptions = hiveResponse.data.hives[0].options;
+
+      // Convert simple options object to array of option objects with proper structure
+      const formattedOptions = [];
+      for (const option of hiveOptions) {
+        // Use the new option value if provided, otherwise use the current value or default
+        const currentOption = currentBee.options.find(o => o.Name === option.Name);
+        const currentValue = currentOption ? currentOption.Value : (option.Default || '*');
+        const optionValue = config.options && config.options[option.Name] !== undefined
+          ? config.options[option.Name]
+          : currentValue;
+
+        formattedOptions.push({
+          Name: option.Name,
+          Description: option.Description,
+          Type: option.Type,
+          Default: option.Default,
+          Mandatory: option.Mandatory,
+          Value: optionValue
+        });
+      }
+
+      // Create the properly formatted config
+      const formattedConfig = {
+        name: config.name || currentBee.name,
+        namespace: currentBee.namespace,
+        description: config.description || currentBee.description,
+        active: config.active !== undefined ? config.active : currentBee.active,
+        options: formattedOptions
+      };
+
+      // Wrap the config in a 'bee' object as expected by the API
+      const wrappedConfig = { bee: formattedConfig };
+      const response = await this.axios.put(`/v1/bees/${id}`, wrappedConfig);
       return response.data;
     } catch (error) {
       this._handleError(error, `Error updating bee ${id}`);
@@ -160,7 +231,25 @@ class BeehiveClient {
    */
   async createChain(config) {
     try {
-      const response = await this.axios.post('/v1/chains', config);
+      // Format the event object properly
+      const formattedEvent = {
+        Bee: config.event.bee,
+        Name: config.event.name,
+        Options: [] // The API expects an array of Placeholder objects
+      };
+
+      // Format the chain config
+      const formattedConfig = {
+        name: config.name,
+        description: config.description || '',
+        event: formattedEvent,
+        filters: config.filters || [],
+        actions: config.actions || []
+      };
+
+      // Wrap the config in a 'chain' object as expected by the API
+      const wrappedConfig = { chain: formattedConfig };
+      const response = await this.axios.post('/v1/chains', wrappedConfig);
       return response.data;
     } catch (error) {
       this._handleError(error, 'Error creating chain');
@@ -175,7 +264,32 @@ class BeehiveClient {
    */
   async updateChain(id, config) {
     try {
-      const response = await this.axios.put(`/v1/chains/${id}`, config);
+      // Get the current chain details
+      const chainResponse = await this.axios.get(`/v1/chains/${id}`);
+      const currentChain = chainResponse.data.chains[0];
+
+      // Format the event object properly if provided
+      let formattedEvent = currentChain.event;
+      if (config.event) {
+        formattedEvent = {
+          Bee: config.event.bee || currentChain.event.Bee,
+          Name: config.event.name || currentChain.event.Name,
+          Options: currentChain.event.Options || [] // Preserve existing options
+        };
+      }
+
+      // Format the chain config
+      const formattedConfig = {
+        name: config.name || currentChain.name,
+        description: config.description || currentChain.description,
+        event: formattedEvent,
+        filters: config.filters || currentChain.filters,
+        actions: config.actions || currentChain.actions
+      };
+
+      // Wrap the config in a 'chain' object as expected by the API
+      const wrappedConfig = { chain: formattedConfig };
+      const response = await this.axios.put(`/v1/chains/${id}`, wrappedConfig);
       return response.data;
     } catch (error) {
       this._handleError(error, `Error updating chain ${id}`);
